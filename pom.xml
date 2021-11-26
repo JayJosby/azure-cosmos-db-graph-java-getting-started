@@ -26,5 +26,12 @@
       <artifactId>gremlin-driver</artifactId>
       <version>3.4.0</version>
     </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.apache.tinkerpop/gremlin-driver -->
+    <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-driver</artifactId>
+      <version>3.4.0</version>
+    </dependency>
   </dependencies>
 </project>

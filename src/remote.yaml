@@ -1,7 +1,7 @@
-hosts: [$name$.gremlin.cosmosdb.azure.com]
+hosts: [sevenliu.gremlin.cosmosdb.azure.com]
 port: 443
-username: /dbs/$database$/colls/$collection$
-password: $masterKey$
+username: /dbs/sample-database/colls/sample-graph
+password: Ee4xA2UNVAFHEMXzZmhw8TOFCi5hyoDgWEFqq8v5SfIiYk5W7N4Eoj6RWre0gdv3AOacq7ap6HV3f0BWWwEWBA==
 connectionPool: {
   enableSsl: true}
 serializer: { className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV2d0, config: { serializeResultToString: true }}
