@@ -148,7 +148,7 @@ public class Program
 
 
     public static void main( String[] args ) throws ExecutionException, InterruptedException {
-      initGraph();
+//      initGraph();
 //
 //      // add V
 //      Vertex v = new Vertex();
@@ -199,15 +199,15 @@ public class Program
       Edge edge = new Edge();
       edge.setLabel("Touch");
       edge.getProperties().put("time", "2021-11-25");
-      addV(v_1);
-      addV(v_2);
-      addV(v_3);
-      addV(v_4);
-      addV(v_5);
-      addE(v_1, v_2, edge);
-      addE(v_2, v_3, edge);
-      addE(v_2, v_4, edge);
-      addE(v_2, v_5, edge);
+//      addV(v_1);
+//      addV(v_2);
+//      addV(v_3);
+//      addV(v_4);
+//      addV(v_5);
+//      addE(v_1, v_2, edge);
+//      addE(v_2, v_3, edge);
+//      addE(v_2, v_4, edge);
+//      addE(v_2, v_5, edge);
 
       // find vertex by id
         Vertex vertex = findVertexById("Jay");
@@ -481,7 +481,6 @@ public class Program
       //System.exit(0);
   }
 
-
     public static Vertex findVertexById(String id){
         Vertex vertex = new Vertex();
         String singleQuery = "g.V('"+id+"')";
@@ -544,9 +543,7 @@ public class Program
                 Map map_result = (Map)result.getObject();
                 vertex.setId(map_result.get("id").toString());
                 vertex.setLabel(map_result.get("label").toString());
-//                for(){
-//
-//                }
+                vertex.setProperties((Map)map_result.get("properties"));
                 System.out.println("\nQuery result:");
                 System.out.println(result.toString());
             }
@@ -559,17 +556,422 @@ public class Program
         }
 
         System.out.println("Demo complete!\n Press Enter key to continue...");
-//      try{
-//          System.in.read();
-//      } catch (IOException e){
-//          e.printStackTrace();
-//          return;
-//      }
 
         // Properly close all opened clients and the cluster
         cluster.close();
         return vertex;
     }
+
+    public static Edge findEdgeById(String id){
+        Edge edge = new Edge();
+        String singleQuery = "g.E('"+id+"')";
+        String gremlinQueries[] = new String[] {singleQuery};
+
+        Cluster cluster;
+        Client client;
+        try {
+            // Attempt to create the connection objects
+            Cluster.Builder temp = Cluster.build(new File("src/remote.yaml"));
+            cluster = temp.create();
+            client = cluster.connect();
+        } catch (FileNotFoundException e) {
+            // Handle file errors.
+            System.out.println("Couldn't find the configuration file.");
+            e.printStackTrace();
+            return null;
+        }
+
+        // After connection is successful, run all the queries against the server.
+        for (String query : gremlinQueries) {
+            System.out.println("\nSubmitting this Gremlin query: " + query);
+
+            // Submitting remote query to the server.
+            ResultSet results = client.submit(query);
+            CompletableFuture<List<Result>> completableFutureResults;
+            CompletableFuture<Map<String, Object>> completableFutureStatusAttributes;
+            List<Result> resultList;
+            Map<String, Object> statusAttributes;
+
+            try{
+                completableFutureResults = results.all();
+                completableFutureStatusAttributes = results.statusAttributes();
+                resultList = completableFutureResults.get();
+                statusAttributes = completableFutureStatusAttributes.get();
+            }
+            catch(ExecutionException | InterruptedException e){
+                e.printStackTrace();
+                break;
+            }
+            catch(Exception e){
+                ResponseException re = (ResponseException) e.getCause();
+
+                // Response status codes. You can catch the 429 status code response and work on retry logic.
+                System.out.println("Status code: " + re.getStatusAttributes().get().get("x-ms-status-code"));
+                System.out.println("Substatus code: " + re.getStatusAttributes().get().get("x-ms-substatus-code"));
+
+                // If error code is 429, this value will inform how many milliseconds you need to wait before retrying.
+                System.out.println("Retry after (ms): " + re.getStatusAttributes().get().get("x-ms-retry-after"));
+
+                // Total Request Units (RUs) charged for the operation, upon failure.
+                System.out.println("Request charge: " + re.getStatusAttributes().get().get("x-ms-total-request-charge"));
+
+                // ActivityId for server-side debugging
+                System.out.println("ActivityId: " + re.getStatusAttributes().get().get("x-ms-activity-id"));
+                throw(e);
+            }
+
+            for (Result result : resultList) {
+                Map map_result = (Map)result.getObject();
+                edge.setId(map_result.get("id").toString());
+                edge.setLabel(map_result.get("label").toString());
+                edge.setProperties((Map)map_result.get("properties"));
+                System.out.println("\nQuery result:");
+                System.out.println(result.toString());
+            }
+
+            // Status code for successful query. Usually HTTP 200.
+            System.out.println("Status: " + statusAttributes.get("x-ms-status-code").toString());
+
+            // Total Request Units (RUs) charged for the operation, after a successful run.
+            System.out.println("Total charge: " + statusAttributes.get("x-ms-total-request-charge").toString());
+        }
+
+        System.out.println("Demo complete!\n Press Enter key to continue...");
+
+        // Properly close all opened clients and the cluster
+        cluster.close();
+        return edge;
+    }
+
+    public static void deleteVertexById(String id) throws FileNotFoundException {
+        Edge edge = new Edge();
+        String singleQuery = "g.V('"+id+"').drop()";
+        String gremlinQueries[] = new String[] {singleQuery};
+
+        Cluster cluster;
+        Client client;
+
+        Cluster.Builder temp = Cluster.build(new File("src/remote.yaml"));
+        cluster = temp.create();
+        client = cluster.connect();
+
+        // After connection is successful, run all the queries against the server.
+        for (String query : gremlinQueries) {
+            System.out.println("\nSubmitting this Gremlin query: " + query);
+
+            // Submitting remote query to the server.
+            ResultSet results = client.submit(query);
+            CompletableFuture<List<Result>> completableFutureResults;
+            CompletableFuture<Map<String, Object>> completableFutureStatusAttributes;
+            List<Result> resultList;
+            Map<String, Object> statusAttributes;
+
+            try{
+                completableFutureResults = results.all();
+                completableFutureStatusAttributes = results.statusAttributes();
+                resultList = completableFutureResults.get();
+                statusAttributes = completableFutureStatusAttributes.get();
+            }
+            catch(ExecutionException | InterruptedException e){
+                e.printStackTrace();
+                break;
+            }
+            catch(Exception e){
+                ResponseException re = (ResponseException) e.getCause();
+
+                // Response status codes. You can catch the 429 status code response and work on retry logic.
+                System.out.println("Status code: " + re.getStatusAttributes().get().get("x-ms-status-code"));
+                System.out.println("Substatus code: " + re.getStatusAttributes().get().get("x-ms-substatus-code"));
+
+                // If error code is 429, this value will inform how many milliseconds you need to wait before retrying.
+                System.out.println("Retry after (ms): " + re.getStatusAttributes().get().get("x-ms-retry-after"));
+
+                // Total Request Units (RUs) charged for the operation, upon failure.
+                System.out.println("Request charge: " + re.getStatusAttributes().get().get("x-ms-total-request-charge"));
+
+                // ActivityId for server-side debugging
+                System.out.println("ActivityId: " + re.getStatusAttributes().get().get("x-ms-activity-id"));
+                throw(e);
+            }
+
+            for (Result result : resultList) {
+                Map map_result = (Map)result.getObject();
+                edge.setId(map_result.get("id").toString());
+                edge.setLabel(map_result.get("label").toString());
+                edge.setProperties((Map)map_result.get("properties"));
+                System.out.println("\nQuery result:");
+                System.out.println(result.toString());
+            }
+
+            // Status code for successful query. Usually HTTP 200.
+            System.out.println("Status: " + statusAttributes.get("x-ms-status-code").toString());
+
+            // Total Request Units (RUs) charged for the operation, after a successful run.
+            System.out.println("Total charge: " + statusAttributes.get("x-ms-total-request-charge").toString());
+        }
+
+        System.out.println("Demo complete!\n Press Enter key to continue...");
+
+        // Properly close all opened clients and the cluster
+        cluster.close();
+    }
+
+    // 
+    public static void deleteEdgeById(String id) throws FileNotFoundException {
+        Edge edge = new Edge();
+        String singleQuery = "g.E('"+id+"').drop()";
+        String gremlinQueries[] = new String[] {singleQuery};
+
+        Cluster cluster;
+        Client client;
+
+        Cluster.Builder temp = Cluster.build(new File("src/remote.yaml"));
+        cluster = temp.create();
+        client = cluster.connect();
+
+        // After connection is successful, run all the queries against the server.
+        for (String query : gremlinQueries) {
+            System.out.println("\nSubmitting this Gremlin query: " + query);
+
+            // Submitting remote query to the server.
+            ResultSet results = client.submit(query);
+            CompletableFuture<List<Result>> completableFutureResults;
+            CompletableFuture<Map<String, Object>> completableFutureStatusAttributes;
+            List<Result> resultList;
+            Map<String, Object> statusAttributes;
+
+            try{
+                completableFutureResults = results.all();
+                completableFutureStatusAttributes = results.statusAttributes();
+                resultList = completableFutureResults.get();
+                statusAttributes = completableFutureStatusAttributes.get();
+            }
+            catch(ExecutionException | InterruptedException e){
+                e.printStackTrace();
+                break;
+            }
+            catch(Exception e){
+                ResponseException re = (ResponseException) e.getCause();
+
+                // Response status codes. You can catch the 429 status code response and work on retry logic.
+                System.out.println("Status code: " + re.getStatusAttributes().get().get("x-ms-status-code"));
+                System.out.println("Substatus code: " + re.getStatusAttributes().get().get("x-ms-substatus-code"));
+
+                // If error code is 429, this value will inform how many milliseconds you need to wait before retrying.
+                System.out.println("Retry after (ms): " + re.getStatusAttributes().get().get("x-ms-retry-after"));
+
+                // Total Request Units (RUs) charged for the operation, upon failure.
+                System.out.println("Request charge: " + re.getStatusAttributes().get().get("x-ms-total-request-charge"));
+
+                // ActivityId for server-side debugging
+                System.out.println("ActivityId: " + re.getStatusAttributes().get().get("x-ms-activity-id"));
+                throw(e);
+            }
+
+            for (Result result : resultList) {
+                Map map_result = (Map)result.getObject();
+                edge.setId(map_result.get("id").toString());
+                edge.setLabel(map_result.get("label").toString());
+                edge.setProperties((Map)map_result.get("properties"));
+                System.out.println("\nQuery result:");
+                System.out.println(result.toString());
+            }
+
+            // Status code for successful query. Usually HTTP 200.
+            System.out.println("Status: " + statusAttributes.get("x-ms-status-code").toString());
+
+            // Total Request Units (RUs) charged for the operation, after a successful run.
+            System.out.println("Total charge: " + statusAttributes.get("x-ms-total-request-charge").toString());
+        }
+
+        System.out.println("Demo complete!\n Press Enter key to continue...");
+
+        // Properly close all opened clients and the cluster
+        cluster.close();
+    }
+
+    public static void updateVertex(Vertex v){
+            String deleteQuery = "g.V('"+v.getId()+"').drop()";
+            String singleQuery = "g.addV('"+v.getLabel()+"').property('id', '"+v.getId()+"')";
+            for(Object key:v.getProperties().keySet()){
+                singleQuery += ".property('"+key+"', '"+v.getProperties().get(key)+"')";
+            }
+            singleQuery += ".property('pk', 'pk')";
+            String gremlinQueries[] = new String[] {deleteQuery, singleQuery};
+
+            Cluster cluster;
+            Client client;
+            try {
+                // Attempt to create the connection objects
+                Cluster.Builder temp = Cluster.build(new File("src/remote.yaml"));
+                cluster = temp.create();
+                client = cluster.connect();
+            } catch (FileNotFoundException e) {
+                // Handle file errors.
+                System.out.println("Couldn't find the configuration file.");
+                e.printStackTrace();
+                return;
+            }
+
+            // After connection is successful, run all the queries against the server.
+            for (String query : gremlinQueries) {
+                System.out.println("\nSubmitting this Gremlin query: " + query);
+
+                // Submitting remote query to the server.
+                ResultSet results = client.submit(query);
+                CompletableFuture<List<Result>> completableFutureResults;
+                CompletableFuture<Map<String, Object>> completableFutureStatusAttributes;
+                List<Result> resultList;
+                Map<String, Object> statusAttributes;
+
+                try{
+                    completableFutureResults = results.all();
+                    completableFutureStatusAttributes = results.statusAttributes();
+                    resultList = completableFutureResults.get();
+                    statusAttributes = completableFutureStatusAttributes.get();
+                }
+                catch(ExecutionException | InterruptedException e){
+                    e.printStackTrace();
+                    break;
+                }
+                catch(Exception e){
+                    ResponseException re = (ResponseException) e.getCause();
+
+                    // Response status codes. You can catch the 429 status code response and work on retry logic.
+                    System.out.println("Status code: " + re.getStatusAttributes().get().get("x-ms-status-code"));
+                    System.out.println("Substatus code: " + re.getStatusAttributes().get().get("x-ms-substatus-code"));
+
+                    // If error code is 429, this value will inform how many milliseconds you need to wait before retrying.
+                    System.out.println("Retry after (ms): " + re.getStatusAttributes().get().get("x-ms-retry-after"));
+
+                    // Total Request Units (RUs) charged for the operation, upon failure.
+                    System.out.println("Request charge: " + re.getStatusAttributes().get().get("x-ms-total-request-charge"));
+
+                    // ActivityId for server-side debugging
+                    System.out.println("ActivityId: " + re.getStatusAttributes().get().get("x-ms-activity-id"));
+                    throw(e);
+                }
+
+                for (Result result : resultList) {
+                    System.out.println("\nQuery result:");
+                    System.out.println(result.toString());
+                }
+
+                // Status code for successful query. Usually HTTP 200.
+                System.out.println("Status: " + statusAttributes.get("x-ms-status-code").toString());
+
+                // Total Request Units (RUs) charged for the operation, after a successful run.
+                System.out.println("Total charge: " + statusAttributes.get("x-ms-total-request-charge").toString());
+            }
+
+            System.out.println("Demo complete!\n Press Enter key to continue...");
+//        try{
+//            System.in.read();
+//        } catch (IOException e){
+//            e.printStackTrace();
+//            return;
+//        }
+
+            // Properly close all opened clients and the cluster
+            cluster.close();
+
+        }
+
+
+        // 更新边的思路是，删除边并添加新边
+//    public static void updateEdge(Edge edge) throws ExecutionException, InterruptedException {
+//        //g.V('thomas').addE('knows').to(g.V('mary'))
+//
+//        String singleQuery = "g.V('"+ v_1.getId()+"').addE('"+edge.getLabel()+"')";
+//        if(edge.getId()!=null){
+//            singleQuery += ".property('id', '"+edge.getId()+"')";
+//        }
+//        for(Object key:edge.getProperties().keySet()){
+//            singleQuery += ".property('"+key+"', '"+edge.getProperties().get(key)+"')";
+//        }
+//        singleQuery += ".to(g.V('"+v_2.getId()+"'))";
+//        String gremlinQueries[] = new String[] {singleQuery};
+//
+//        Cluster cluster;
+//        Client client;
+//        try {
+//            // Attempt to create the connection objects
+//            Cluster.Builder temp = Cluster.build(new File("src/remote.yaml"));
+//            cluster = temp.create();
+//            client = cluster.connect();
+//        } catch (FileNotFoundException e) {
+//            // Handle file errors.
+//            System.out.println("Couldn't find the configuration file.");
+//            e.printStackTrace();
+//            return;
+//        }
+//
+//        // After connection is successful, run all the queries against the server.
+//        for (String query : gremlinQueries) {
+//            System.out.println("\nSubmitting this Gremlin query: " + query);
+//
+//            // Submitting remote query to the server.
+//            ResultSet results = client.submit(query);
+//            CompletableFuture<List<Result>> completableFutureResults;
+//            CompletableFuture<Map<String, Object>> completableFutureStatusAttributes;
+//            List<Result> resultList;
+//            Map<String, Object> statusAttributes;
+//
+//            try{
+//                completableFutureResults = results.all();
+//                completableFutureStatusAttributes = results.statusAttributes();
+//                resultList = completableFutureResults.get();
+//                statusAttributes = completableFutureStatusAttributes.get();
+//            }
+//            catch(ExecutionException | InterruptedException e){
+//                e.printStackTrace();
+//                break;
+//            }
+//            catch(Exception e){
+//                ResponseException re = (ResponseException) e.getCause();
+//
+//                // Response status codes. You can catch the 429 status code response and work on retry logic.
+//                System.out.println("Status code: " + re.getStatusAttributes().get().get("x-ms-status-code"));
+//                System.out.println("Substatus code: " + re.getStatusAttributes().get().get("x-ms-substatus-code"));
+//
+//                // If error code is 429, this value will inform how many milliseconds you need to wait before retrying.
+//                System.out.println("Retry after (ms): " + re.getStatusAttributes().get().get("x-ms-retry-after"));
+//
+//                // Total Request Units (RUs) charged for the operation, upon failure.
+//                System.out.println("Request charge: " + re.getStatusAttributes().get().get("x-ms-total-request-charge"));
+//
+//                // ActivityId for server-side debugging
+//                System.out.println("ActivityId: " + re.getStatusAttributes().get().get("x-ms-activity-id"));
+//                throw(e);
+//            }
+//
+//            for (Result result : resultList) {
+//                System.out.println("\nQuery result:");
+//                System.out.println(result.toString());
+//            }
+//
+//            // Status code for successful query. Usually HTTP 200.
+//            System.out.println("Status: " + statusAttributes.get("x-ms-status-code").toString());
+//
+//            // Total Request Units (RUs) charged for the operation, after a successful run.
+//            System.out.println("Total charge: " + statusAttributes.get("x-ms-total-request-charge").toString());
+//        }
+//
+//        System.out.println("Demo complete!\n Press Enter key to continue...");
+////      try{
+////          System.in.read();
+////      } catch (IOException e){
+////          e.printStackTrace();
+////          return;
+////      }
+//
+//        // Properly close all opened clients and the cluster
+//        cluster.close();
+//
+//        //System.exit(0);
+//    }
+
+
 }
 
 

@@ -29,6 +29,10 @@ public class Edge {
         this.id = id;
     }
 
+    public void  setProperties(Map map){
+        this.properties = map;
+    }
+
     public Map<Object, Object> getProperties(){
         return properties;
     }
